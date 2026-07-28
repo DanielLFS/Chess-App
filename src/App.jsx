@@ -169,7 +169,7 @@ export default function App() {
         <section className="match-setup">
           <div className="setup-intro">
             <p className="setup-number">MATCH / 001</p>
-            <h2 aria-label="Build your opening position">Build your<br />opening position.</h2>
+            <h2 aria-label="Set up your game">Set up your<br />game.</h2>
             <p>Choose the opponent, your side, and how far the server should search. These settings lock when the match begins.</p>
             <div className="setup-engine-note">
               <span>LIVE SERVER</span>

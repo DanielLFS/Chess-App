@@ -34,7 +34,7 @@ describe("dual-engine controls", () => {
   it("starts with Daniel Engine and renders returned search metrics during play", async () => {
     render(<App />);
 
-    expect(screen.getByRole("heading", { name: /Build your opening position/ })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Set up your game/ })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /Start match/ }));
     fireEvent.click(screen.getByRole("button", { name: "Analyse" }));
 
