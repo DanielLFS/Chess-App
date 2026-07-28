@@ -31,10 +31,11 @@ describe("dual-engine controls", () => {
     });
   });
 
-  it("defaults to Daniel Engine and renders returned search metrics", async () => {
+  it("starts with Daniel Engine and renders returned search metrics during play", async () => {
     render(<App />);
 
-    expect(screen.getByText("Daniel Engine", { selector: "strong" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Build your opening position/ })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Start match/ }));
     fireEvent.click(screen.getByRole("button", { name: "Analyse" }));
 
     await waitFor(() => expect(chessApi.analyze).toHaveBeenCalled());
@@ -43,9 +44,13 @@ describe("dual-engine controls", () => {
     expect(screen.getByText("8,902")).toBeInTheDocument();
   });
 
-  it("allows Stockfish to be selected for comparison", () => {
+  it("locks Stockfish selection after starting the match", () => {
     render(<App />);
     fireEvent.click(screen.getByRole("button", { name: "Stockfish" }));
-    expect(screen.getByText("Stockfish 17")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Start match/ }));
+
+    expect(screen.getAllByText("Stockfish 17")).toHaveLength(2);
+    expect(screen.queryByRole("button", { name: "Stockfish" })).not.toBeInTheDocument();
+    expect(screen.getByText("LOCKED")).toBeInTheDocument();
   });
 });

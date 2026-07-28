@@ -17,6 +17,7 @@ function scoreText(line) {
 }
 
 export default function App() {
+  const [phase, setPhase] = useState("setup");
   const [game, setGame] = useState(() => new Chess());
   const [history, setHistory] = useState([new Chess().fen()]);
   const [selected, setSelected] = useState(null);
@@ -122,7 +123,7 @@ export default function App() {
     }
   }
 
-  function newGame(color = playerColor) {
+  function startMatch() {
     controller.current?.abort();
     const next = new Chess();
     setGame(next);
@@ -131,13 +132,15 @@ export default function App() {
     setSelected(null);
     setAnalysis([]);
     setMetrics(null);
-    setMessage(color === "white" ? "Your move" : "Server opens");
-    if (color === "black") askEngine(next);
+    setMessage(playerColor === "white" ? "Your move" : "Server opens");
+    setPhase("playing");
+    if (playerColor === "black") setTimeout(() => askEngine(next), 0);
   }
 
-  function changeColor(color) {
-    setPlayerColor(color);
-    newGame(color);
+  function leaveMatch() {
+    controller.current?.abort();
+    setThinking(false);
+    setPhase("setup");
   }
 
   function undo() {
@@ -162,6 +165,58 @@ export default function App() {
         <a href="https://github.com/DanielLFS/Chess-App" target="_blank" rel="noreferrer">View source ↗</a>
       </header>
 
+      {phase === "setup" ? (
+        <section className="match-setup">
+          <div className="setup-intro">
+            <p className="setup-number">MATCH / 001</p>
+            <h2 aria-label="Build your opening position">Build your<br />opening position.</h2>
+            <p>Choose the opponent, your side, and how far the server should search. These settings lock when the match begins.</p>
+            <div className="setup-engine-note">
+              <span>LIVE SERVER</span>
+              <strong>{engineName === "daniel" ? "Custom Numba engine" : "Stockfish 17 reference"}</strong>
+              <small>{engineName === "daniel" ? "Bitboards · alpha-beta · visible metrics" : "External benchmark and playing-strength reference"}</small>
+            </div>
+          </div>
+
+          <div className="setup-card">
+            <div className="setup-heading"><span>Configure match</span><b>01—03</b></div>
+            <fieldset>
+              <legend><span>01</span> Choose opponent</legend>
+              <div className="choice-grid engine-choices">
+                <button aria-label="Daniel Engine" className={engineName === "daniel" ? "selected-choice" : ""} onClick={() => setEngineName("daniel")}>
+                  <b>DE</b><strong>Daniel Engine</strong><small>Custom build · live NPS</small>
+                </button>
+                <button aria-label="Stockfish" className={engineName === "stockfish" ? "selected-choice" : ""} onClick={() => setEngineName("stockfish")}>
+                  <b>SF</b><strong>Stockfish 17</strong><small>Reference engine</small>
+                </button>
+              </div>
+            </fieldset>
+            <fieldset>
+              <legend><span>02</span> Take a side</legend>
+              <div className="choice-grid side-choices">
+                {["white", "black"].map((color) => (
+                  <button aria-label={`Play as ${color}`} className={playerColor === color ? "selected-choice" : ""} onClick={() => setPlayerColor(color)} key={color}>
+                    <b>{color === "white" ? "♙" : "♟"}</b><strong>{color}</strong><small>{color === "white" ? "You open" : "Engine opens"}</small>
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+            <fieldset>
+              <legend><span>03</span> Search profile</legend>
+              <div className="depth-choices">
+                {levels.map((item, index) => (
+                  <button aria-label={`${item.label} search`} className={level === index ? "selected-choice" : ""} onClick={() => setLevel(index)} key={item.label}>
+                    <strong>{item.label}</strong><small>{item.time} ms profile</small>
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+            <button aria-label="Start match" className="launch-match" onClick={startMatch}><span>Start match</span><b>→</b></button>
+            <p className="lock-note">Configuration is locked during play.</p>
+          </div>
+        </section>
+      ) : (
+        <>
       <section className="workspace">
         <div className="board-column">
           <div className="player"><span className="avatar dark-avatar">{engineName === "daniel" ? "DE" : "SF"}</span><div><strong>{engineName === "daniel" ? "Daniel Engine" : "Stockfish 17"}</strong><small>Home server · {levels[level].label}</small></div></div>
@@ -181,22 +236,16 @@ export default function App() {
           <div className="status-row"><span className={thinking ? "pulse" : ""}></span>{message}</div>
           <div className="tabs">
             <section>
-              <h2>Game controls</h2>
-              <label>Opponent engine</label>
-              <div className="segmented">
-                <button className={engineName === "daniel" ? "active" : ""} onClick={() => { setEngineName("daniel"); setMetrics(null); }} disabled={thinking}>Daniel Engine</button>
-                <button className={engineName === "stockfish" ? "active" : ""} onClick={() => { setEngineName("stockfish"); setMetrics(null); }} disabled={thinking}>Stockfish</button>
+              <div className="match-heading">
+                <h2>Match card</h2><span>LOCKED</span>
               </div>
-              <label>Play as</label>
-              <div className="segmented">
-                {["white", "black"].map((color) => <button className={playerColor === color ? "active" : ""} onClick={() => changeColor(color)} key={color}>{color}</button>)}
-              </div>
-              <label>Engine time</label>
-              <div className="segmented">
-                {levels.map((item, index) => <button className={level === index ? "active" : ""} onClick={() => setLevel(index)} key={item.label}>{item.label}</button>)}
-              </div>
+              <dl className="match-card">
+                <div><dt>Opponent</dt><dd>{engineName === "daniel" ? "Daniel Engine" : "Stockfish 17"}</dd></div>
+                <div><dt>Your side</dt><dd>{playerColor}</dd></div>
+                <div><dt>Search</dt><dd>{levels[level].label}</dd></div>
+              </dl>
               <div className="actions">
-                <button className="primary" onClick={() => newGame()}>New game</button>
+                <button className="primary" onClick={leaveMatch}>New match</button>
                 <button onClick={undo} disabled={history.length < 3 || thinking}>Undo turn</button>
                 <button onClick={analyze} disabled={thinking}>Analyse</button>
               </div>
@@ -242,6 +291,8 @@ export default function App() {
         <div><span>COMPILED SEARCH</span><strong>~118K NPS</strong><small>Current alpha-beta core</small></div>
         <a href="https://github.com/DanielLFS/Chess-App-Self-Host-Server/blob/main/ENGINE_REPORT.md" target="_blank" rel="noreferrer">Read engineering report ↗</a>
       </section>
+        </>
+      )}
       <footer><span>React · FastAPI · Numba · Bitboards · Stockfish · Prometheus</span><span>Built by DanielLFS</span></footer>
     </main>
   );
