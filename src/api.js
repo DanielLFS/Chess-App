@@ -14,9 +14,8 @@ async function request(path, body, signal) {
 
 export const chessApi = {
   validateMove: (fen, move, signal) => request("/v1/move", { fen, move }, signal),
-  engineMove: (fen, timeMs, signal) =>
-    request("/v1/engine-move", { fen, time_ms: timeMs, multipv: 1 }, signal),
-  analyze: (fen, timeMs, multipv, signal) =>
-    request("/v1/analyze", { fen, time_ms: timeMs, multipv }, signal),
+  engineMove: (fen, timeMs, engine, signal) =>
+    request("/v1/engine-move", { fen, time_ms: timeMs, multipv: 1, engine }, signal),
+  analyze: (fen, timeMs, multipv, engine, signal) =>
+    request("/v1/analyze", { fen, time_ms: timeMs, multipv, engine }, signal),
 };
-

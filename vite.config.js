@@ -4,5 +4,8 @@ import react from "@vitejs/plugin-react";
 export default defineConfig({
   plugins: [react()],
   base: "/Chess-App/",
+  test: {
+    environment: "jsdom",
+    setupFiles: "./src/testSetup.js",
+  },
 });
-

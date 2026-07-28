@@ -23,8 +23,10 @@ export default function App() {
   const [lastMove, setLastMove] = useState(null);
   const [playerColor, setPlayerColor] = useState("white");
   const [level, setLevel] = useState(1);
+  const [engineName, setEngineName] = useState("daniel");
   const [thinking, setThinking] = useState(false);
   const [analysis, setAnalysis] = useState([]);
+  const [metrics, setMetrics] = useState(null);
   const [message, setMessage] = useState("Your move");
   const controller = useRef(null);
 
@@ -48,6 +50,7 @@ export default function App() {
       const result = await chessApi.engineMove(
         position.fen(),
         levels[level].time,
+        engineName,
         controller.current.signal,
       );
       const next = new Chess(position.fen());
@@ -55,6 +58,7 @@ export default function App() {
       setLastMove(result.move.uci);
       replaceGame(next);
       setAnalysis([result.analysis]);
+      setMetrics(result.metrics);
       setMessage(next.isGameOver() ? gameResult(next) : "Your move");
     } catch (error) {
       if (error.name !== "AbortError") setMessage(error.message);
@@ -78,6 +82,7 @@ export default function App() {
       replaceGame(preview);
       setSelected(null);
       setAnalysis([]);
+      setMetrics(null);
       if (preview.isGameOver()) setMessage(gameResult(preview));
       else if (preview.turn() !== playerColor[0]) await askEngine(preview);
       return true;
@@ -100,8 +105,15 @@ export default function App() {
     setThinking(true);
     setMessage("Analysing position…");
     try {
-      const result = await chessApi.analyze(game.fen(), levels[level].time, 3);
+      const multipv = engineName === "stockfish" ? 3 : 1;
+      const result = await chessApi.analyze(
+        game.fen(),
+        levels[level].time,
+        multipv,
+        engineName,
+      );
       setAnalysis(result.lines);
+      setMetrics(result.metrics);
       setMessage(`Analysis complete · ${result.elapsed_ms} ms`);
     } catch (error) {
       setMessage(error.message);
@@ -118,6 +130,7 @@ export default function App() {
     setLastMove(null);
     setSelected(null);
     setAnalysis([]);
+    setMetrics(null);
     setMessage(color === "white" ? "Your move" : "Server opens");
     if (color === "black") askEngine(next);
   }
@@ -135,6 +148,7 @@ export default function App() {
     setGame(next);
     setLastMove(null);
     setAnalysis([]);
+    setMetrics(null);
     setMessage("Position restored");
   }
 
@@ -145,12 +159,12 @@ export default function App() {
           <p className="kicker">SELF-HOSTED ENGINE</p>
           <h1>Chess Lab<span>.</span></h1>
         </div>
-        <a href="https://github.com/DanielLFS" target="_blank" rel="noreferrer">View source ↗</a>
+        <a href="https://github.com/DanielLFS/Chess-App" target="_blank" rel="noreferrer">View source ↗</a>
       </header>
 
       <section className="workspace">
         <div className="board-column">
-          <div className="player"><span className="avatar dark-avatar">SF</span><div><strong>Stockfish</strong><small>Home server · {levels[level].label}</small></div></div>
+          <div className="player"><span className="avatar dark-avatar">{engineName === "daniel" ? "DE" : "SF"}</span><div><strong>{engineName === "daniel" ? "Daniel Engine" : "Stockfish 17"}</strong><small>Home server · {levels[level].label}</small></div></div>
           <ChessBoard
             game={game}
             orientation={playerColor}
@@ -168,6 +182,11 @@ export default function App() {
           <div className="tabs">
             <section>
               <h2>Game controls</h2>
+              <label>Opponent engine</label>
+              <div className="segmented">
+                <button className={engineName === "daniel" ? "active" : ""} onClick={() => { setEngineName("daniel"); setMetrics(null); }} disabled={thinking}>Daniel Engine</button>
+                <button className={engineName === "stockfish" ? "active" : ""} onClick={() => { setEngineName("stockfish"); setMetrics(null); }} disabled={thinking}>Stockfish</button>
+              </div>
               <label>Play as</label>
               <div className="segmented">
                 {["white", "black"].map((color) => <button className={playerColor === color ? "active" : ""} onClick={() => changeColor(color)} key={color}>{color}</button>)}
@@ -184,6 +203,20 @@ export default function App() {
             </section>
 
             <section>
+              <h2>Live search metrics</h2>
+              {metrics ? (
+                <div className="metrics-grid">
+                  <div><strong>{metrics.engine === "daniel" ? "Daniel" : "Stockfish"}</strong><small>Engine</small></div>
+                  <div><strong>{metrics.depth}</strong><small>Depth</small></div>
+                  <div><strong>{metrics.nodes?.toLocaleString() || "UCI"}</strong><small>Nodes</small></div>
+                  <div><strong>{metrics.nodes_per_second ? `${(metrics.nodes_per_second / 1000).toFixed(1)}k` : "—"}</strong><small>NPS</small></div>
+                  <div><strong>{metrics.elapsed_ms} ms</strong><small>Search</small></div>
+                  <div><strong>{metrics.beta_cutoffs?.toLocaleString() || "—"}</strong><small>β cutoffs</small></div>
+                </div>
+              ) : <p className="empty">Metrics appear after the server searches a position.</p>}
+            </section>
+
+            <section>
               <h2>Engine lines</h2>
               {analysis.length ? analysis.map((line, index) => (
                 <div className="line" key={`${line.depth}-${index}`}>
@@ -191,7 +224,7 @@ export default function App() {
                   <p>{line.moves.map((move) => move.san).join(" ")}</p>
                   <small>Depth {line.depth}</small>
                 </div>
-              )) : <p className="empty">Run analysis to compare Stockfish’s top three continuations.</p>}
+              )) : <p className="empty">Run analysis to inspect the selected engine’s continuation.</p>}
             </section>
 
             <section>
@@ -203,7 +236,13 @@ export default function App() {
           </div>
         </aside>
       </section>
-      <footer><span>React · FastAPI · Stockfish · Prometheus</span><span>Built by DanielLFS</span></footer>
+      <section className="benchmark-strip">
+        <div><span>CUSTOM MOVEGEN</span><strong>3.43M NPS</strong><small>Kiwipete · depth 5</small></div>
+        <div><span>STOCKFISH MOVEGEN</span><strong>193.21M NPS</strong><small>Same position and limits</small></div>
+        <div><span>COMPILED SEARCH</span><strong>~118K NPS</strong><small>Current alpha-beta core</small></div>
+        <a href="https://github.com/DanielLFS/Chess-App-Self-Host-Server/blob/main/ENGINE_REPORT.md" target="_blank" rel="noreferrer">Read engineering report ↗</a>
+      </section>
+      <footer><span>React · FastAPI · Numba · Bitboards · Stockfish · Prometheus</span><span>Built by DanielLFS</span></footer>
     </main>
   );
 }

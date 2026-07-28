@@ -57,13 +57,25 @@ label { display: block; color: #8793a0; font-size: .72rem; margin: 16px 0 7px; }
 .line b { color: #91e5bc; }
 .line p { margin: 0; font-family: ui-monospace, monospace; color: #c2cbd5; font-size: .75rem; line-height: 1.5; }
 .line small { grid-column: 2; color: #687481; }
+.metrics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.metrics-grid div { min-width: 0; padding: 10px; border: 1px solid #28312d; border-radius: 8px; background: #0c100e; display: flex; flex-direction: column; }
+.metrics-grid strong { color: #a9edca; font-size: .83rem; overflow: hidden; text-overflow: ellipsis; }
+.metrics-grid small { color: #687481; font-size: .61rem; margin-top: 3px; }
 .empty { color: #6f7b88; font-size: .78rem; line-height: 1.5; margin: 0; }
 .move-list { display: grid; grid-template-columns: 1fr 1fr; max-height: 150px; overflow: auto; gap: 5px 10px; font-size: .75rem; color: #b6c0ca; }
 .move-list span b { color: #687481; display: inline-block; width: 22px; }
+.benchmark-strip { border-top: 1px solid #252a32; padding: 30px 0; display: grid; grid-template-columns: repeat(3, 1fr) auto; align-items: center; gap: 24px; }
+.benchmark-strip div { display: flex; flex-direction: column; gap: 3px; }
+.benchmark-strip span { color: #718078; font-size: .59rem; letter-spacing: .12em; }
+.benchmark-strip strong { color: #b7f0d2; font-size: 1.15rem; }
+.benchmark-strip small { color: #687481; font-size: .65rem; }
+.benchmark-strip a { color: #9ee7c2; font-size: .74rem; text-decoration: none; }
 footer { border-top: 1px solid #252a32; min-height: 80px; display: flex; justify-content: space-between; align-items: center; color: #67727e; font-size: .7rem; }
 @media (max-width: 850px) {
   .workspace { grid-template-columns: 1fr; }
   aside { position: static; }
+  .benchmark-strip { grid-template-columns: repeat(3, 1fr); }
+  .benchmark-strip a { grid-column: 1 / -1; }
 }
 @media (max-width: 520px) {
   .app-shell { width: min(100% - 20px, 1240px); }
@@ -71,5 +83,6 @@ footer { border-top: 1px solid #252a32; min-height: 80px; display: flex; justify
   header a { display: none; }
   .workspace { padding-top: 20px; gap: 20px; }
   .piece { font-size: clamp(2rem, 11vw, 3.8rem); }
+  .benchmark-strip { grid-template-columns: 1fr; }
+  .benchmark-strip a { grid-column: auto; }
 }
-
