@@ -89,10 +89,10 @@ export default function App() {
     }
   }
 
-  function selectSquare(square) {
+  async function selectSquare(square) {
     if (thinking || game.isGameOver() || game.turn() !== playerColor[0]) return;
     const piece = game.get(square);
-    if (selected && makeMove(selected, square)) return;
+    if (selected && await makeMove(selected, square)) return;
     setSelected(piece?.color === playerColor[0] ? square : null);
   }
 
@@ -213,4 +213,3 @@ function gameResult(game) {
   if (game.isDraw()) return "Draw";
   return "Game over";
 }
-
